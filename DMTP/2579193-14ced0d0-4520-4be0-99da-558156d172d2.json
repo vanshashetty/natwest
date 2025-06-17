@@ -1,0 +1,216 @@
+{
+	"info": {
+		"_postman_id": "2579193-14ced0d0-4520-4be0-99da-558156d172d2",
+		"name": "DMTP-Arrears",
+		"description": "DMTP-Arrears",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "3. Access token",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "edb2e86b-7337-45c5-b9f0-091a423b9dd6",
+						"exec": [
+							"// setting up the nonce\r",
+							"var uuid = require('uuid');\r",
+							"\r",
+							"// setting up the jwt\r",
+							"// Tips from: https://github.com/kjur/jsrsasign/issues/199\",\r",
+							"// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-JWT-generation\",\r",
+							"var navigator = {}; //fake a navigator object for the lib\r",
+							"var window = {}; //fake a window object for the lib\r",
+							"eval(postman.getGlobalVariable(\"jsrsasign-js\")); //import javascript jsrsasign\r",
+							"\r",
+							"// Header\r",
+							"var header = { \"kid\": postman.getEnvironmentVariable(\"signing_kid\"),\"typ\": \"JWS\",\"alg\": \"PS256\"};\r",
+							"\r",
+							"var now_date = Math.round(Date.now()/1000);\r",
+							"var exp_date = Math.round(600 + Date.now()/1000);\r",
+							"var data = {\r",
+							"     \"sub\": postman.getEnvironmentVariable(\"client_id\"),\r",
+							"     \"aud\": postman.getEnvironmentVariable(\"aud\"),\r",
+							"     \"scope\":postman.getEnvironmentVariable(\"scope\"),\r",
+							"\t \"iss\": postman.getEnvironmentVariable(\"client_id\"),\r",
+							"     \"iat\": now_date,\r",
+							"     \"exp\": exp_date,\r",
+							"     \"jti\": uuid.v4()\r",
+							"};\r",
+							"\r",
+							"console.log(data);\r",
+							"\r",
+							"var prvKey = postman.getEnvironmentVariable(\"secret\");\r",
+							"var sHeader = JSON.stringify(header);\r",
+							"var sPayload = JSON.stringify(data);\r",
+							"\r",
+							"console.log(\"privatekey:\" + prvKey);\r",
+							"console.log(\"header\" + sHeader);\r",
+							"console.log(\"payload\" + sPayload);\r",
+							"\r",
+							"console.log(KJUR);\r",
+							"\r",
+							"try \r",
+							"{\r",
+							"  var sJWT = KJUR.jws.JWS.sign(\"PS256\", sHeader, sPayload, prvKey);\r",
+							"\r",
+							"} catch(e) {\r",
+							"    console.log(\"Error-\"+ e);\r",
+							"}\r",
+							"\r",
+							"postman.setEnvironmentVariable(\"jwt_token\", sJWT);\r",
+							"console.log(sJWT);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "29517559-b211-4949-a8cd-95c3a173108a",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"postman.setEnvironmentVariable(\"access_token\", jsonData.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"id": "2579193-344debd7-d161-47d2-bad5-11b761bbad37",
+			"protocolProfileBehavior": {
+				"followRedirects": false,
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"type": "text"
+						},
+						{
+							"key": "scope",
+							"value": "{{scope}}",
+							"type": "text"
+						},
+						{
+							"key": "client_assertion_type",
+							"value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+							"type": "text"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{secret}}",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "client_assertion",
+							"value": "{{jwt_token}}",
+							"type": "text"
+						},
+						{
+							"key": "client_assertion",
+							"value": "eyJraWQiOiJsdi1OM1NjOTMtM0pwZE5RaW1tUllPTG9GTFUiLCJ0eXAiOiJKV1MiLCJhbGciOiJQUzI1NiJ9.eyJzdWIiOiIzR0FDTHJySkN0eEVUQUtibXpya3VzcmJzIiwiYXVkIjoiaHR0cHM6Ly9pYW10LWF1dGhuLXFhLW53Yi5tYW5hZ2VkdGVzdC5jb20vYXMvdG9rZW4ub2F1dGgyIiwic2NvcGUiOiJjdXN0b21lci1wcm9maWxlLXZjcC1jaW46c2VhcmNoIiwiaXNzIjoiM0dBQ0xyckpDdHhFVEFLYm16cmt1c3JicyIsImlhdCI6MTY1NjQ4MjIyNCwiZXhwIjoxNjU2NDgyMjI1LCJqdGkiOiI0Njc3NGY0Ny05MDI5LTQ1Y2YtYmE5OS1jMmY0ZDgwNDU5NTQifQ.X8JCUE_wuGrOLwrAa7dTC3RGJatQ3UEziUj9cPArDhgR_RWbS_9agtpATd6iFyrYx2eJqr9DVR4k2ruzAW7Z7Jcm40moUXBRJkV6kFOmU456Am1LuyzHna1DiBLQlAdDx6kvGkAJKnQsYzihwoTy19Ul01BcsxIGQmDOQMvbOtinCyXr6KxAdX5PKSdfdEviUGVAuPb-2wvRYgjDf1jaaB6OYd7e1QdqkZfgkS705Y__zeqpa08jmVsZsYLpcKcPqf79w1l7WoBqi7M-awlb1M6Cu2y_HoBTjbAJKyOUmYXQjZTZjEnzR6HtynXQY4M5ymXilbX3YKG5ELiinCmlRg",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "https://iamt-authn-qa-nwb.managedtest.com/as/token.oauth2",
+					"protocol": "https",
+					"host": [
+						"iamt-authn-qa-nwb",
+						"managedtest",
+						"com"
+					],
+					"path": [
+						"as",
+						"token.oauth2"
+					]
+				},
+				"description": "Access token"
+			},
+			"response": []
+		},
+		{
+			"name": "https://sit-api.natwest.com/debt-management/v1/arrears/loan/repayment-arrears/lookup",
+			"id": "2579193-0ad166f9-c501-4999-aace-52d761f0dd3f",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "001oRpPPcS7F34OoQe2jeSIdybYG",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"accountNumber\": \"95652086\",\n    \"sortCode\": \"601711\",\n    \"cin\": \"1468738150\",\n    \"brand\": \"NWB\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://sit-api.natwest.com/debt-management/v1/arrears/loan/repayment-arrears/lookup",
+					"protocol": "https",
+					"host": [
+						"sit-api",
+						"natwest",
+						"com"
+					],
+					"path": [
+						"debt-management",
+						"v1",
+						"arrears",
+						"loan",
+						"repayment-arrears",
+						"lookup"
+					]
+				},
+				"description": "DM arrears service"
+			},
+			"response": []
+		}
+	]
+}
